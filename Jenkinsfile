@@ -4,6 +4,7 @@ pipeline {
     environment {
         AWS_ACCESS_KEY_ID     = credentials('aws-credentials')
         AWS_SECRET_ACCESS_KEY = credentials('aws-credentials')
+        AWS_REGION            = "ap-south-1"
     }
 
     stages {
@@ -13,13 +14,24 @@ pipeline {
             }
         }
 
-        stage('Terraform Init and Plan') {
+        stage('Terraform Init') {
             steps {
                 script {
                     sh '''
-                    terraform init
-                    terraform plan -out=tfplan
+                    terraform init -backend-config="bucket=pramod-terraform-state" \
+                                   -backend-config="key=mys3staticwebsite/terraform.tfstate" \
+                                   -backend-config="region=ap-south-1" \
+                                   -backend-config="encrypt=true" \
+                                   -backend-config="dynamodb_table=terraform-lock"
                     '''
+                }
+            }
+        }
+
+        stage('Terraform Plan') {
+            steps {
+                script {
+                    sh 'terraform plan -out=tfplan'
                 }
             }
         }
@@ -35,7 +47,7 @@ pipeline {
                     if (mergeCheck) {
                         echo "Merge detected! Running terraform apply..."
                         sh 'terraform apply -auto-approve tfplan'
-                        slackNotification("Terraform apply successful! ")
+                        slackSend channel: '#jenkins', message: " *Deployment Successful!*\n\n*Job:* ${JOB_NAME} \n*Branch:* ${GIT_BRANCH} \n*Build Number:* ${BUILD_NUMBER} \n*View Job:* ${BUILD_URL}"
                     } else {
                         echo "No merge detected. Skipping terraform apply."
                     }
@@ -46,18 +58,10 @@ pipeline {
 
     post {
         success {
-            script {
-                slackNotification("Terraform deployment successful! ")
-            }
+            slackSend channel: '#jenkins', message: " *Deployment Successful!*\n\n*Job:* ${JOB_NAME} \n*Branch:* ${GIT_BRANCH} \n*Build Number:* ${BUILD_NUMBER} \n*View Job:* ${BUILD_URL}"
         }
         failure {
-            script {
-                slackNotification("Terraform deployment failed! ")
-            }
+            slackSend channel: '#jenkins', message: " *Deployment Failed!*\n\n*Job:* ${JOB_NAME} \n*Branch:* ${GIT_BRANCH} \n*Build Number:* ${BUILD_NUMBER} \n*View Job:* ${BUILD_URL}"
         }
     }
-}
-
-def slackNotification(message) {
-    slackSend(channel: '#jenkins', message: message)
 }
