@@ -1,4 +1,4 @@
-# S3 Static Website Hosting with Terraform and Jenkins
+# AWS S3 STATIC WEBSITE HOSTING WITH TERRAFORM AND JENKINS
 
 ## Overview
 This project demonstrates how to deploy a static website using AWS S3, Terraform for infrastructure as code, and Jenkins for CI/CD automation. The infrastructure includes an S3 bucket for hosting, and Terraform state management using a remote S3 bucket with DynamoDB for state locking.
@@ -9,11 +9,12 @@ This project demonstrates how to deploy a static website using AWS S3, Terraform
 - [Terraform Setup](#terraform-setup)
 - [Jenkins Automation](#jenkins-automation)
 - [Deployment Workflow](#deployment-workflow)
-- [Destroying the Infrastructure](#destroying-the-infrastructure)
+- [Expected Output](#expected-output)
+- [Conclusion](#conclusion)
 
 ## Prerequisites
 - AWS account with IAM credentials.
-- Terraform installed (v1.9.6 or later).
+- Terraform installed.
 - Jenkins configured with a Multibranch Pipeline.
 - An S3 bucket for storing Terraform state.
 - A DynamoDB table for state locking.
@@ -34,117 +35,47 @@ mys3staticwebsite/
 ```
 
 ## Terraform Setup
-### Backend Configuration
-Terraform state is stored in an S3 bucket and locked using a DynamoDB table.
-```hcl
-terraform {
-  backend "s3" {
-    bucket         = "pramod-terraform-state"
-    key            = "mys3staticwebsite/terraform.tfstate"
-    region         = "ap-south-1"
-    encrypt        = true
-    dynamodb_table = "terraform-lock"
-  }
-}
-```
-
-### Infrastructure Configuration
-- Creates an S3 bucket to host the static website.
-- Enables static website hosting on the S3 bucket.
-- Configures the bucket policy for public read access.
+1. Define the AWS provider and required variables in `provider.tf` and `variables.tf`.
+2. Create an S3 bucket for static website hosting in `main.tf`.
+3. Configures public read access and bucket policies.
+4. Upload `index.html` and `error.html` to the S3 bucket.
+5. Store the Terraform state file in an S3 backend.
+6. A DynamoDB table for state locking.
 
 ## Jenkins Automation
-Jenkins is set up with a Multibranch Pipeline, triggering Terraform workflows based on Git branch events.
-
-### Jenkinsfile
-```groovy
-pipeline {
-    agent any
-
-    environment {
-        AWS_ACCESS_KEY_ID     = credentials('aws-credentials')
-        AWS_SECRET_ACCESS_KEY = credentials('aws-credentials')
-        AWS_REGION            = "ap-south-1"
-    }
-
-    stages {
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
-
-        stage('Terraform Init') {
-            steps {
-                script {
-                    sh '''
-                    terraform init -backend-config="bucket=pramod-terraform-state" \
-                                   -backend-config="key=mys3staticwebsite/terraform.tfstate" \
-                                   -backend-config="region=ap-south-1" \
-                                   -backend-config="encrypt=true" \
-                                   -backend-config="dynamodb_table=terraform-lock"
-                    '''
-                }
-            }
-        }
-
-        stage('Terraform Plan') {
-            steps {
-                script {
-                    sh 'terraform plan -out=tfplan'
-                }
-            }
-        }
-
-        stage('Terraform Apply on Merge') {
-            when {
-                branch 'main'
-            }
-            steps {
-                script {
-                    def mergeCheck = sh(script: "git log --merges -n 1 --pretty=format:'%H'", returnStdout: true).trim()
-
-                    if (mergeCheck) {
-                        echo "Merge detected! Running terraform apply..."
-                        sh 'terraform apply -auto-approve tfplan'
-                        slackSend channel: '#jenkins', message: " *Deployment Successful!*\n\n*Job:* ${JOB_NAME} \n*Branch:* ${GIT_BRANCH} \n*Build Number:* ${BUILD_NUMBER} \n*View Job:* ${BUILD_URL}"
-                    } else {
-                        echo "No merge detected. Skipping terraform apply."
-                    }
-                }
-            }
-        }
-    }
-
-    post {
-        success {
-            slackSend channel: '#jenkins', message: " *Deployment Successful!*\n\n*Job:* ${JOB_NAME} \n*Branch:* ${GIT_BRANCH} \n*Build Number:* ${BUILD_NUMBER} \n*View Job:* ${BUILD_URL}"
-        }
-        failure {
-            slackSend channel: '#jenkins', message: " *Deployment Failed!*\n\n*Job:* ${JOB_NAME} \n*Branch:* ${GIT_BRANCH} \n*Build Number:* ${BUILD_NUMBER} \n*View Job:* ${BUILD_URL}"
-        }
-    }
-}
-```
+1. Add the repository to Jenkins.
+2. Set up a multibranch pipeline.
+3. Use the provided `Jenkinsfile` for automation.
 
 ## Deployment Workflow
-1. **Push Changes to `us-1048` Branch:**
-   - Developers work on the `us-1048` branch and push changes.
+1. **Push Changes:**
+   - Developers work on the feature branch and push changes.
    - Jenkins runs Terraform `init` and `plan` but does not apply.
-2. **Create Pull Request to `main` Branch:**
-   - A PR is created to merge changes into `main`.
+2. **Create Pull Request:**
+   - A PR is created to merge changes into the main branch.
    - Review and approval are required before merging.
-3. **Merge into `main` and Deploy:**
+3. **Merge and Deploy:**
    - On merge, Jenkins detects the change and applies Terraform configurations.
    - S3 bucket is provisioned, and static website hosting is enabled.
    - A Slack notification is sent upon success or failure.
 
-## Destroying the Infrastructure
-To remove all resources created by Terraform:
-```sh
-terraform destroy -auto-approve
-```
-This will delete the S3 bucket, removing the static website.
+## Expected Output
+### Terraform Output:
+- S3 bucket is successfully created.
+- Website files (`index.html`, `error.html`) are uploaded.
+- Public access is enabled, allowing users to view the site.
+- Terraform state file is stored in the configured S3 backend.
+
+### Jenkins Pipeline Output:
+- The pipeline successfully initializes, validates, and applies the Terraform configuration.
+- Website files are deployed to S3.
+- Terraform state file upload confirmation in the logs.
+- Confirmation message showing a successful deployment.
+
+### Website Access:
+- Open the provided S3 static website URL in a browser.
+- The homepage (`index.html`) should be displayed.
+- Navigating to a non-existent page should show the custom `error.html` page.
 
 ## Conclusion
 This project successfully automates S3 static website deployment using Terraform and Jenkins. It ensures infrastructure is managed as code while maintaining an efficient CI/CD pipeline.
