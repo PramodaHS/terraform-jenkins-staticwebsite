@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pramod's Portfolio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a2e;
+            color: #ffffff;
+            text-align: center;
+        }
+        header {
+            padding: 20px;
+            background-color: #16213e;
+            font-size: 24px;
+            font-weight: 600;
+            animation: fadeIn 1.5s ease-in;
+        }
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #0f3460;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.1);
+            animation: slideUp 1s ease-in-out;
+        }
+        .profile-img {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            margin: 20px auto;
+            display: block;
+            border: 3px solid #e94560;
+            animation: bounce 2s infinite;
+        }
+        .projects, .reviews {
+            margin: 20px 0;
+        }
+        .project-item, .review-item {
+            background-color: #e94560;
+            padding: 15px;
+            margin: 10px;
+            border-radius: 8px;
+            transition: transform 0.3s ease-in-out;
+        }
+        .project-item:hover, .review-item:hover {
+            transform: scale(1.05);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+    </style>
+</head>
+<body>
+    <header>Pramod's Portfolio</header>
+    <div class="container">
+        <img src="https://pramodterraformprojectwebsite2025.s3.ap-south-1.amazonaws.com/profile.png" alt="Profile Picture" class="profile-img">
+        <h2>Projects</h2>
+        <div class="projects">
+            <div class="project-item">AWS 3-Tier Web Application</div>
+            <div class="project-item">CI/CD with GitHub Actions & Lambda</div>
+            <div class="project-item">Kubernetes Deployment for Flask App</div>
+            <div class="project-item">AWS Load Balancer & Auto Scaling</div>
+        </div>
+        <h2>Reviews</h2>
+        <div class="reviews">
+            <div class="review-item">"Pramod's AWS expertise is outstanding!" - Client A</div>
+            <div class="review-item">"Highly skilled in DevOps and cloud automation." - Client B</div>
+            <div class="review-item">"Impressive portfolio and great technical skills." - Client C</div>
+        </div>
+    </div>
+</body>
+</html>
